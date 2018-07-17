@@ -1,0 +1,1 @@
+Health bar may have multiple animations. For instance if the player is below a quarter of health, their health bar may glow red instead of gold or something else.
