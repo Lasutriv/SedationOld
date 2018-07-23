@@ -13,7 +13,7 @@ Not every file will be added either due to design ideas, special art, and more.
 # What ProjectZ May Be
 A procedurally generated platformer that is merely open world with dynamic building, fighting, and acrobatics.
 # What ProjectZ Needs To Run
-Pygame 1.9.3 or higher
+Pygame 1.9.3 or higher  
 Python 3.6.3 or higher
 # What Is The Ambition Of ProjectZ 
 To push Python as hard as possible in order to create a highly functioning game.
