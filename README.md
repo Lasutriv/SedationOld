@@ -19,4 +19,4 @@ Python 3.7 or higher
 To push Python as hard as possible in order to create a highly functioning game.
 # What Is The Current Stage
 Although the project has been worked on for countless hours, it's nowhere near completition and is only able to play on the first
-scene of the first level.
+scene of the first level, this is uf you have the full code. Reminder, this repository is only a fraction of the code.
