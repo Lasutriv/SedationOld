@@ -1,4 +1,4 @@
-# ProjectZOld
+# SedationOld
 Not every file will be added either due to design ideas, special art, and more.
 # What's Included:
 - Core engine functions for running the game  
@@ -10,9 +10,9 @@ Not every file will be added either due to design ideas, special art, and more.
 - Notes and ideas for game development  
 - Updated core engine functions  
 - Updated tile editor for level design  
-# What ProjectZ May Be
+# What Sedation May Be
 A procedurally generated platformer that is merely open world with dynamic building, fighting, and acrobatics.
-# What ProjectZ Needs To Run
+# What Sedation Needs To Run
 Pygame 1.9.4 or higher  
 Python 3.7 or higher
 # What Is The Ambition Of ProjectZ 
