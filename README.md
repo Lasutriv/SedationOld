@@ -1,5 +1,8 @@
 # SedationOld
-Not every file will be added either due to design ideas, special art, and more.
+Not every file will be added either due to design ideas, special art, and more.  
+
+Video of most recently posted developments: https://vimeo.com/286078427  
+Videos of development: https://vimeo.com/user85412475
 # What's Included:
 - Core engine functions for running the game  
 - Level templates for design  
