@@ -1,0 +1,21 @@
+# Compiled Source #
+###################
+*.exe
+
+# Logs and Databases #
+######################
+**/Logs
+
+# Specific Game Files/Folders #
+###############################
+ideas.txt
+Secrets/
+
+# Specific Visual Studio Files/Folders #
+########################################
+.vs
+
+# Specific PyCharm Files #
+##########################
+.idea
+__pycache__/
