@@ -1,9 +1,14 @@
+# Settings file for the tile editor.
+# Tanner Fry
+# tefnq2@mst.edu
 # File/folder locations
 DIR_SPRITES_ASSETS = 'Assets'
+DIR_SPRITES_ANIMATION = 'Assets/Animation'
 
 # Game constants
 SCREEN_HEIGHT = 960
-SCREEN_WIDTH = 1440
+SCREEN_WIDTH = 1344
+# Screen resolution matters based on the size of the left hand tab.
 TILE_SIZE = 32
 
 # Tab constants

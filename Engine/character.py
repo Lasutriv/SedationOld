@@ -1,14 +1,16 @@
-import animations
+# The character module that handles all interactions between the game, the engine itself and the character.
+# Tanner Fry
+# tefnq2@mst.edu
 import settings
 
 import pygame
 
 
 class Character(pygame.sprite.Sprite):
-
+    """Class. To handle events, actions, and information regarding the character and their impacts on the game."""
     def __init__(self, name: str, file_save_name: str, engine_game: object, x: int, y: int):
         """
-        A class to handle events, actions, and information regarding the character and their impacts on the game.
+        Setting up the character for movement, animations, displaying, and more.
 
         @param name: the name of the character that the user specified
         @type name: str
@@ -16,35 +18,43 @@ class Character(pygame.sprite.Sprite):
         @type file_save_name: str
         @param engine_game: the engine which controls the network of the game when it starts after the menu
         @type engine_game: object
-        @param x: the x location that the character is to be initially at
+        @param x: the x location that the character is to be initialized at
         @type x: int
-        @param y: the y location that the character is to be initially at
+        @param y: the y location that the character is to be initialized at
         @type y: int
         """
         self.engine_game = engine_game
-        self.groups = engine_game.sprites_all
+        self.engine_menu = object  # Used only for the sample character to access the menu object
+        self.groups = engine_game.sprites_important
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.name = name
         self.file_save_name = file_save_name
         # Variables
-        self.direction = 'Right'
+        self.active_buffs = []  # The buffs that will be applied to the character, str
+        self.collision_sets = 'None'  # Helps handle special collision sets based on the value
+        self.direction = 'Right'  # Current direction the character is facing
         self.health = 100
-        self.state = 'None'
+        self.state = 'None'  # The state, or action, they are in: idle, running, jumping, climbing, etc
         self.state_changed = False
         self.jump_count = 0
         self.jump_strength = settings.JUMP_STRENGTH
+        self.wall_jump_ratio_x = 2.5
+        self.wall_jump_ratio_y = 0.8
         self.x_velocity = 0
         self.y_velocity = 0
-        # Character Actions
-        self.blink = False
+        # Character Action Triggers
+        self.blink = False  # NOTE: Note created yet
         self.climbing = False
         self.falling = True
         self.jumping = False
         self.running = False
         self.try_climb = False
-        self.vortex = False
+        self.vortex = False  # NOTE: Note created yet
         self.walking = False
         # Character traits, these traits are only for new games and not loaded from files
+        # NOTE: Sigmoid function example for scaling combat and other objects in relation to one another
+        # NOTE: RawOdds = (1 + Skill) / ((1 + Skill) + (1 + Difficulty))
+        # NOTE: AdjustedOdds = 1 / (1 + (e ^ ((RawOdds * Steepness) + Offset))) <-- Steepness = -10, Offset = 5
         self.trait_endurance = settings.CHAR_ENDURANCE
         self.trait_endurance_max = settings.CHAR_ENDURANCE_MAX
         self.trait_endurance_decrease_modifier = settings.CHAR_ENDURANCE_DECREASE_MODIFIER
@@ -71,7 +81,8 @@ class Character(pygame.sprite.Sprite):
         self.trait_strength_increase_time_modifier = settings.CHAR_STRENGTH_INCREASE_TIME_MODIFIER
         # Images
         self.images = []
-        self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE + '/Idle/Sprite_Char_Base_96_Trimmed_Idle.png').convert_alpha())
+        self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                             + '/Idle/Sprite_Char_Base_96_Trimmed_Idle.png').convert_alpha())
         self.image_index = 0
         self.image = self.images[self.image_index]
         self.rect = self.image.get_rect()
@@ -87,7 +98,7 @@ class Character(pygame.sprite.Sprite):
     def handle_keys(self):
         """
         A function to handle all of the keys for moving and interacting with the main network of the engine,
-        whether that entails keys for moving/interacting with the character and in-game features.
+        whether that entails keys for moving/interacting with the character or with in-game features.
 
         @return: none
         @rtype: none
@@ -96,15 +107,15 @@ class Character(pygame.sprite.Sprite):
 
         # TODO: Create the handling of key bindings set by the user in 'bindings.py'
         # Handling keys for jumping
-        if keys_pressed[pygame.K_SPACE] and self.trait_endurance > settings.REQ_JUMP_ENDURANCE:
+        if keys_pressed[pygame.K_SPACE] and self.trait_endurance > settings.REQ_JUMP_ENDURANCE and self.engine_game.engine_handler.state != 'Game_Inventory':
             if settings.DOUBLE_JUMP is False and not self.jumping and not self.falling:
                 if self.jumping is False:
-                    self.trait_endurance -= self.jump_strength
+                    self.trait_endurance -= settings.REQ_JUMP_ENDURANCE
                 self.jumping = True
                 self.y_velocity = self.jump_strength
             elif settings.DOUBLE_JUMP is True and self.jump_count <= 2:
                 if self.jumping is False:
-                    self.trait_endurance -= self.jump_strength
+                    self.trait_endurance -= settings.REQ_JUMP_ENDURANCE
                 if self.jump_count is 0:
                     self.jump_count += 1
                     self.jumping = True
@@ -139,8 +150,8 @@ class Character(pygame.sprite.Sprite):
                     self.state = 'Running'
                     self.state_changed = True
                     self.direction = 'Left'
-                    self.x_velocity = -self.jump_strength / 3
-                    self.y_velocity = self.jump_strength / 1.2
+                    self.x_velocity = -self.jump_strength / self.wall_jump_ratio_x
+                    self.y_velocity = self.jump_strength / self.wall_jump_ratio_y
                 elif self.direction == 'Left' and self.x_velocity <= settings.CAP_VELOCITY_WALKING - settings.ACCELERATION:
                     self.climbing = False
                     self.jumping = True
@@ -148,27 +159,31 @@ class Character(pygame.sprite.Sprite):
                     self.state = 'Running'
                     self.state_changed = True
                     self.direction = 'Right'
-                    self.x_velocity = self.jump_strength / 3
-                    self.y_velocity = self.jump_strength / 1.2
-            # As the character continues to climb, their endurance depletes based off of two modifiers that the user might be able to change later.
-            # One is for how much to decrease endurance and how often that should happen.
+                    self.x_velocity = self.jump_strength / self.wall_jump_ratio_x
+                    self.y_velocity = self.jump_strength / self.wall_jump_ratio_y
+            # As the character continues to climb, their endurance depletes based off of two modifiers that the user
+            # might be able to change later. One is for how much to decrease endurance and how often that should happen.
             self.timer_climbing += 1
             if self.timer_climbing == self.trait_endurance_decrease_time_modifier:
                 self.trait_endurance -= self.trait_endurance_decrease_modifier
                 self.timer_climbing = 0
 
         # Handling keys for movement on ground or in air
-        if (keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]) and self.climbing is False and self.jumping is False:
+        if (keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]) and self.climbing is False \
+                and self.engine_game.engine_handler.state != 'Game_Inventory':
             self.direction = 'Right'
-            # TODO: Make the running and walking fully incorporated.
+
+            # TODO: Make the running and walking fully incorporated with the hands gradually moving past the side.
             if keys_pressed[pygame.K_LSHIFT]:
                 if self.x_velocity <= settings.CAP_VELOCITY_RUNNING - settings.ACCELERATION:
                     self.x_velocity += settings.ACCELERATION
             else:
                 if self.x_velocity <= settings.CAP_VELOCITY_WALKING - settings.ACCELERATION:
                     self.x_velocity += settings.ACCELERATION
-        if (keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]) and self.climbing is False and self.jumping is False:
+        if (keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]) and self.climbing is False \
+                and self.engine_game.engine_handler.state != 'Game_Inventory':
             self.direction = 'Left'
+
             if keys_pressed[pygame.K_LSHIFT]:
                 if self.x_velocity >= -settings.CAP_VELOCITY_RUNNING + settings.ACCELERATION:
                     self.x_velocity -= settings.ACCELERATION
@@ -176,14 +191,120 @@ class Character(pygame.sprite.Sprite):
                 if self.x_velocity >= -settings.CAP_VELOCITY_WALKING + settings.ACCELERATION:
                     self.x_velocity -= settings.ACCELERATION
 
-    def check_character(self):
+        # Handle keys for idle
+        if self.state == 'Idle' and keys_pressed[pygame.K_g]:
+            self.engine_game.engine_handler.state = 'Game_Government_Management'
+
+    def check_var_change_state(self):
         """
-        Check and update character variables based on their state, traits, and velocity.
+        A function to change the state based off of the character's specific attributes affected by actions, traits,
+        velocity, and set the images based on the state.
 
         @return: none
         @rtype: none
         """
-        # Check states
+        if 'Interacting' not in self.state:
+            # Check actions and change state
+            if self.x_velocity == 0 and self.y_velocity == 0 and self.state != 'Idle' and self.state != 'Crying':
+                self.state = 'Idle'
+                self.state_changed = True
+            elif self.y_velocity > 0 and self.state != 'Climbing' and self.state != 'Falling':
+
+                self.state = 'Falling'
+                self.state_changed = True
+            # TODO: Fix the code below because as of right now anytime the user ins't 'running' and they move, their state
+            # CONT: changes to running. Also the self.falling is used but the state is never changed to falling and we also
+            # CONT: need to take into account jumping and then falling...
+            elif (self.x_velocity > 0 or self.x_velocity < 0) and self.y_velocity == 0:
+                # Check velocity speed to determine state since user key input increases the character's velocity
+                # NOTE: Above 9 units/sec has gained enough speed to increase the animation speed by changing states
+                if (self.x_velocity > settings.CAP_VELOCITY_WALKING or self.x_velocity < -settings.CAP_VELOCITY_WALKING) \
+                        and self.state != 'Running':
+                    self.state = 'Running'
+                    self.state_changed = True
+                # TODO: Fix below code. State doesn't change back to walking after running and I tried to use the opposite
+                # CONT: of the above for the 'Running' state
+                if self.state != 'Walking' and self.state != 'Running':
+                    self.state = 'Walking'
+                    self.state_changed = True
+            # TODO: Uncomment when there are falling animations
+            if self.climbing and self.state != 'Climbing':
+                self.state = 'Climbing'
+                self.state_changed = True
+            # elif self.y_velocity > 0:
+            #     self.state_changed = True
+            #     self.state = 'Falling'
+
+        # Change animation via state
+        if self.state_changed:
+            self.images.clear()
+            # Reset values since we are changing animations
+            self.image_index = 0
+            self.state_changed = False
+            self.timer_images = 0
+            if self.state == 'Idle':
+                # No need for images facing left. We can just transform.flip the character
+                for i in range(1, 5):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Breathing/Sprite_Char_Base_96_Trimmed_Breathing' + str(i)
+                                                         + '.png').convert_alpha())
+            elif self.state == 'Climbing':
+                for i in range(1, 4):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Climbing/Sprite_Char_Base_96_Trimmed_Climbing' + str(i)
+                                                         + '.png').convert_alpha())
+            elif self.state == 'Crying':
+                for i in range(1, 15):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Crying/Sprite_Char_Base_96_Trimmed_Crying' + str(i)
+                                                         + '.png').convert_alpha())
+            elif self.state == 'Falling':
+                for i in range(1, 3):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Falling/Sprite_Char_Base_96_Trimmed_Falling' + str(i)
+                                                         + '.png').convert_alpha())
+            # TODO: Finish this for special menu interactions
+            elif self.state == 'Interacting_With_Exit':
+                for i in range(1, 9):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Interacting/Feedback/Sprite_Char_Base_96_Trimmed'
+                                                         + '_Interacting_Feedback' + str(i) + '.png').convert_alpha())
+            elif self.state == 'Interacting_With_Feedback':
+                for i in range(1, 9):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Interacting/Feedback/Sprite_Char_Base_96_Trimmed'
+                                                         + '_Interacting_Feedback' + str(i) + '.png').convert_alpha())
+            elif self.state == 'Interacting_With_Help':
+                for i in range(1, 9):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Interacting/Feedback/Sprite_Char_Base_96_Trimmed'
+                                                         + '_Interacting_Feedback' + str(i) + '.png').convert_alpha())
+            elif self.state == 'Interacting_With_Load':
+                for i in range(1, 9):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Interacting/Feedback/Sprite_Char_Base_96_Trimmed'
+                                                         + '_Interacting_Feedback' + str(i) + '.png').convert_alpha())
+            elif self.state == 'Interacting_With_Options':
+                for i in range(1, 9):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Interacting/Feedback/Sprite_Char_Base_96_Trimmed'
+                                                         + '_Interacting_Feedback' + str(i) + '.png').convert_alpha())
+            elif self.state == 'Running' or self.state == 'Walking':
+                # No need for images facing left. We can just transform.flip the character
+                for i in range(1, 8):
+                    self.images.append(pygame.image.load(settings.DIR_SPRITES_CHAR_BASE
+                                                         + '/Running/Sprite_Char_Base_96_Trimmed_Running' + str(i)
+                                                         + '.png').convert_alpha())
+            print('State changed to ' + self.state)
+
+    def check_character_apply_physics(self):
+        """
+        Apply physics to the character's velocity
+
+        @return: none
+        @rtype: none
+        """
+        # Gravity
         if self.jumping:
             self.falling = False
             self.rect.y -= self.y_velocity
@@ -215,17 +336,17 @@ class Character(pygame.sprite.Sprite):
             self.jump_count = 0
             self.y_velocity = 0
 
-        # Check character states and change traits accordingly
+        # Update traits based on character interactions
         # Endurance
         if self.trait_endurance != self.trait_endurance_max:
             # Check to make sure the character isn't doing an activity
-            if self.climbing is False and self.falling is False and self.jumping is False:
+            if self.climbing is False and self.jumping is False:
                 self.timer_trait_endurance += 1
                 # Increase endurance due to resting or not performing extraneous activities
                 if self.timer_trait_endurance == self.trait_endurance_increase_time_modifier:
                     self.trait_endurance += self.trait_endurance_increase_modifier
                     self.timer_trait_endurance = 0
-        # NOTE: Trait location check
+        # NOTE: Trait checking
         # Influence
         # Resolve
         # Strength
@@ -254,18 +375,32 @@ class Character(pygame.sprite.Sprite):
 
     def check_collision(self):
         """
-        A function to check the character against in game objects for collisions as well as updating other character variables.
+        A function to check the character against in game objects for collisions as well as updating other character
+        variables.
 
         @return: none
         @rtype: none
         """
-        wall_hit_list = pygame.sprite.spritecollide(self, self.engine_game.sprites_walls, False)
+        wall_hit_list = pygame.sprite.spritecollide(self, self.engine_game.sprites_active_walls, False)
 
+        # Check special collision sets
+        if self.collision_sets != 'None':
+            # Work with the sample character specifically for the interactive menu
+            if self.collision_sets == 'Menu':
+                if self.rect.y >= 735:
+                    self.rect.y = 735
+                    self.y_velocity = 0  # So the engine will register not falling
+                    self.falling = False
+                    self.jumping = False  # Used to update jump count
+                    self.jump_count = 0
+
+        # Check tile collision sets
         if len(wall_hit_list) > 0:
             for wall in wall_hit_list:
                 # Check falling/walking into a wall from above
                 if self.rect.collidepoint(wall.rect.midtop):
-                    self.rect.bottom = wall.rect.top + 1  # 1 works perfectly
+                    # Could fix, not important atm
+                    self.rect.bottom = wall.rect.top + 1  # 1 works perfectly... don't ask cause idk
                     self.falling = False
                 # Check falling into corner, lets clip through it
                 if self.rect.collidepoint(wall.rect.topleft) and not self.rect.collidepoint(wall.rect.midleft) and self.falling is True:
@@ -344,51 +479,11 @@ class Character(pygame.sprite.Sprite):
         if not self.trait_endurance > settings.REQ_CLIMBING_ENDURANCE:
             self.climbing = False
 
-    def check_state(self):
+    def check_state_apply_animation(self):
         """
-        A function to change the state based off of the character's specific attributes affected by actions, traits, and velocity.
-
-        @return: none
-        @rtype: none
-        """
-        # Check actions and change state
-        if self.x_velocity == 0 and self.y_velocity == 0 and self.state != 'Idle':
-            self.state_changed = True
-            self.state = 'Idle'
-        # TODO: Fix the code below because as of right now anytime the user ins't 'running' and they move, their state changes to
-        # CONT: running. Also the self.falling is used but the state is never changed to falling and we also need to take into
-        # CONT: account jumping and then falling...
-        elif (self.x_velocity > 0 or self.x_velocity < 0) and self.y_velocity == 0 and self.state != 'Running':
-            self.state_changed = True
-            self.state = 'Running'
-        # TODO: Uncomment when there are falling animations
-        if self.climbing and self.state != 'Climbing':
-            self.state_changed = True
-            self.state = 'Climbing'
-        # elif self.y_velocity > 0:
-        #     self.state_changed = True
-        #     self.state = 'Falling'
-
-        # Change animation via state
-        if self.state_changed:
-            self.images.clear()
-            # Reset values since we are changing animations
-            self.image_index = 0
-            self.timer_images = 0
-            if self.state == 'Idle':
-                # No need for images facing left. We can just transform.flip the character
-                animations.add_idle_right_images(self.images)
-            elif self.state == 'Running':
-                # No need for images facing left. We can just transform.flip the character
-                animations.add_run_right_images(self.images)
-            elif self.state == 'Climbing':
-                animations.add_climbing_right_images(self.images)
-            self.state_changed = False
-
-    def check_animation(self):
-        """
-        A function to change the animation and animation trigger for the looping of animations. This function bases the animation on a state rather than
-        specific values from actions because those values need to be turned into one state after all scenarios are calculated.
+        A function to change the animation and animation trigger for the looping of animations. This function bases the
+        animation on a state rather than specific values from actions because those values need to be turned into one
+        state after all scenarios are calculated.
 
         @return: none
         @rtype: none
@@ -401,11 +496,23 @@ class Character(pygame.sprite.Sprite):
             self.timer_images_trigger = settings.ANIM_JUMPING_SPEED
         elif self.state == 'Falling':
             self.timer_images_trigger = settings.ANIM_FALLING_SPEED
+        elif self.state == 'Interacting_With_Exit':
+            self.timer_images_trigger = settings.ANIM_INTERACT_EXIT_SPEED
+        elif self.state == 'Interacting_With_Feedback':
+            self.timer_images_trigger = settings.ANIM_INTERACT_FEEDBACK_SPEED
+        elif self.state == 'Interacting_With_Help':
+            self.timer_images_trigger = settings.ANIM_INTERACT_HELP_SPEED
+        elif self.state == 'Interacting_With_Options':
+            self.timer_images_trigger = settings.ANIM_INTERACT_OPTIONS_SPEED
+        # TODO: Create/fix this
+        elif self.state == 'Inventory':
+            pass
         elif self.state == 'Idle':
             # TODO: Make the idle animation slower if the endurance is closer to its maximum
             if self.trait_endurance < self.trait_endurance_max / 2:
-                # Slow down the speed by half of the current speed. We subtract to the timer because it'll take a shorter
-                # amount of time to loop enough to get to the next frame and vice versa for the speed at max endurance
+                # Slow down the speed by half of the current speed. We subtract to the timer because it'll take a
+                # shorter amount of time to loop enough to get to the next frame and vice versa for the speed at max
+                # endurance
                 self.timer_images_trigger = settings.ANIM_IDLE_SPEED - (settings.ANIM_IDLE_SPEED / 2)
             elif self.trait_endurance == self.trait_endurance_max:
                 self.timer_images_trigger = settings.ANIM_IDLE_SPEED + (settings.ANIM_IDLE_SPEED / 2)
@@ -413,6 +520,8 @@ class Character(pygame.sprite.Sprite):
                 self.timer_images_trigger = settings.ANIM_IDLE_SPEED
         elif self.state == 'Running':
             self.timer_images_trigger = settings.ANIM_RUNNING_SPEED
+        elif self.state == 'Walking':
+            self.timer_images_trigger = settings.ANIM_WALKING_SPEED
         self.timer_images += 1
         # Change animation image
         if self.timer_images >= self.timer_images_trigger:
@@ -427,24 +536,6 @@ class Character(pygame.sprite.Sprite):
         if self.direction == 'Left':
             self.image = pygame.transform.flip(self.image, True, False)
 
-    # TODO: Create a setup for creating a character when 'New Game' is selected
-    def setup_traits(self, new_character=True):
-        """
-        A function to figure out specific modifiers based on a loaded file, or a new character, and the statistics/traits
-        of the character.
-
-        @param new_character: determines whether to load defaults or not
-        @type new_character: bool
-        @return: none
-        @rtype: none
-        """
-        if new_character is True:
-            pass
-            # TODO: Start a character setup that then saves and loads the new character created.
-        else:
-            pass
-            # TODO: Create a file to store a character's complete game state.
-
     def update(self):
         """
         A function to finally update the character after performing most in-game tasks.
@@ -452,14 +543,299 @@ class Character(pygame.sprite.Sprite):
         @return: none
         @rtype: none
         """
-        # Check which animation to use
-        self.check_state()
+        # After events have been handled:
+        self.check_var_change_state()
 
-        # Check and update character variables
-        self.check_character()
+        self.check_character_apply_physics()
 
         # Check collisions with new updates
         self.check_collision()
 
-        # Recheck and run animation
-        self.check_animation()
+        self.check_state_apply_animation()
+
+
+class Buff(object):
+    """Class."""
+    def __init__(self, buff_name: str):
+        """
+        Constructor.
+
+        @param buff_name: the name of the buff being created
+        @type buff_name: str
+        """
+        # TODO: Should there be sound incorporated into the buff? Probably
+        self.active = True
+        self.buff_time_length = 0
+        self.debuff_time_length = 0
+        self.image = pygame.image.load('Bin/Sprites/Char_Base/Buff/Chamomile_Tea_96_Buff1.png').convert_alpha()
+        self.image_rect = self.image.get_rect()
+        self.image_timer = 0
+        self.images_buff = []
+        self.images_debuff = []
+        self.index = 0
+        self.name = buff_name
+        self.timer_trigger = 0
+        # The dictionary below is used due to performance issues with python. Everything must be as fast as possible
+        # and hardcoded variables to change is better than reading files with statistics. Not sure about importing
+        # though.
+        # NOTE: Buff length 100 = 1 second
+        self.dict_buffs = {
+            'Chamomile Tea': {
+                'Buff': {
+                    'Influence': 2
+                },
+                'Debuff': {
+                    'Resolve': -2
+                },
+                'Buff Time Length': 900,
+                'DeBuff Time Length': 300,
+                'Image Count': 15,
+                'Image Buff Location': 'Bin/Sprites/Char_Base/Buff/Chamomile_Tea_96_Buff',
+                'Image DeBuff Location': 'Bin/Sprites/Char_Base/Buff/Chamomile_Tea_96_DeBuff',
+                'Image Timer Trigger': 7,
+                'Type': 'Herbal'
+            },
+            'Dried Chamomile Leaves': {
+                'Buff': {
+                    'None': 0
+                },
+                'Debuff': {
+                    'Endurance': -2,
+                    'Influence': -2,
+                    'Strength': -2
+                },
+                'Buff Time Length': 900,
+                'DeBuff Time Length': 300,
+                'Image Count': 10,
+                'Image Buff Location': 'Bin/Sprites/Char_Base/Buff/Dried_Chamomile_Leaves_96_Buff',
+                'Image DeBuff Location': 'Bin/Sprites/Char_Base/Buff/Dried_Chamomile_Leaves_96_DeBuff',
+                'Image Timer Trigger': 7,
+                'Type': 'Herbal'
+            },
+            'Helping Hand': {
+                'Buff': {
+                    'Endurance': 5,
+                    'Influence': 5,
+                    'Resolve': 5
+                },
+                'Debuff': {
+                    'None': 0
+                },
+                'Buff Time Length': 900,
+                'DeBuff Time Length': 300,
+                'Image Count': 0,
+                'Image Buff Location': '',
+                'Image DeBuff Location': '',
+                'Image Timer Trigger': 5,
+                'Type': 'Spiritual'
+            },
+            'Odycopin': {
+                'Buff': {
+                    'Endurance': 5,
+                    'Influence': 2,
+                    'Resolve': 5
+                },
+                'Debuff': {
+                    'Endurance': -10,
+                    'Influence': -8,
+                    'Resolve': -10
+                },
+                'Buff Time Length': 900,
+                'DeBuff Time Length': 300,
+                'Image Count': 0,
+                'Image Buff Location': '',
+                'Image DeBuff Location': '',
+                'Image Timer Trigger': 5,
+                'Type': 'Tech'
+            }
+        }
+        # Finish setting up variables for the buff based on the dict above
+        self.init_rest_of_buff()
+
+    def init_rest_of_buff(self):
+        """
+        A function to use the dictionary of buffs to add in the appropriate images and other influence values.
+
+        @return: none
+        @rtype: none
+        """
+        for buff in self.dict_buffs:
+            if self.name == buff:
+                print('[Debug - Info]: Initializing', self.name, 'images.')
+                buff = self.dict_buffs[buff]
+                # Set the appropriate images
+                for i in range(1, buff['Image Count']):
+                    self.images_buff.append(pygame.image.load(buff['Image Buff Location'] + str(i) + '.png').convert_alpha())
+                    self.images_debuff.append(pygame.image.load(buff['Image DeBuff Location'] + str(i) + '.png').convert_alpha())
+                self.image = self.images_buff[self.index]
+                self.buff_time_length = buff['Buff Time Length']
+                self.debuff_time_length = buff['DeBuff Time Length']
+                self.timer_trigger = buff['Image Timer Trigger']
+
+    def reset_buff(self):
+        """
+        A function to reset the buff.
+
+        @return: none
+        """
+        for buff in self.dict_buffs:
+            if self.name == buff:
+                print('[Debug - Info]: Resetting', self.name, '.')
+                buff = self.dict_buffs[buff]
+                # Reset only the values that change
+                self.active = True
+                self.buff_time_length = buff['Buff Time Length']
+                self.debuff_time_length = buff['DeBuff Time Length']
+                self.image = self.images_buff[0]
+                self.image_timer = 0
+                self.index = 0
+
+
+class BuffHandler(object):
+    """Class. To handle specific buffs and how they apply to the character based of the buff."""
+    def __init__(self, character: object, screen: object):
+        """
+        Constructor.
+
+        @param character: a reference to the object that the user is currently playing as
+        @type character: object
+        """
+        self.active_buffs = []
+        self.character = character
+        self.image_timer = 0
+        self.screen = screen
+        # Check if there are any buffs to add right away
+        self.update_buffs()
+        # TODO: Create situational buffs such as a holy blessing for shielding oneself from fire for X amount of seconds
+        # CONT: This 'holy blessing' can open a lot of possibilities such as getting to new areas unreachable before or
+        # CONT: needing to get into a boss fight. The situational buffs should be somewhat easy to get because there
+        # CONT: should be many different types of bosses that these buffs can be used for.
+        """
+        BUFF OUTLINE
+            Herbal buffs: 
+                Chamomile Tea - The herbal infusion of dried chamomile flowers. Two teaspoons of dried flower per cup 
+                                of tea and then steeped for 5 - 10 minutes. "They say this is just as good as that Jane
+                                I used to have for my anxiety." - Found in a medicine book in the game
+
+            Spiritual buffs:
+                Helping Hand - A low level buff cast by a priest and/or monk.
+
+            Tech buffs [Cyber Era]:
+                Odycopin - A highly advanced, and addictive, medicine to give character boosts
+        """
+
+    def handle_events(self):
+        """
+        A function to look at all active buffs and go through the appropriate steps for the buff handler.
+
+        @return: none
+        @rtype: none
+        """
+        # Apply buff effect to character, display them, and check for new ones
+        self.apply_buff_effect()
+        self.draw_buff_images()
+        self.update_buffs()
+
+    def apply_buff_effect(self):
+        """
+        A function that applies certain effects on the character's traits based on the buff name passed.
+
+        @return: none
+        @rtype: none
+        """
+        for buff in self.active_buffs:
+            # Apply buff
+            if buff.active is True and buff.buff_time_length != 0:
+                # TODO: Add effect from buff to character
+                pass
+            # Apply debuff
+            elif buff.active is False and buff.debuff_time_length != 0:
+                # TODO: Add effect from debuff to character
+                pass
+            else:
+                # Buff has finished it's effects on the character and is now going into passive mode
+                pass
+
+    def update_buffs(self):
+        """
+        A function to set new active buffs from the character's buff list.
+
+        @return: none
+        @rtype: none
+        """
+        # Find if there are any new buffs to add NOTE: Danger this could be resource intensive
+        for buff_name in self.character.active_buffs:
+            if len(self.active_buffs) == 0:
+                # Creates a new buff and sets them to active
+                print('[Debug - Info]:', buff_name, 'added.')
+                self.active_buffs.append(Buff(buff_name))
+            else:
+                trigger = False  # If true then a match of a buff between two lists was accomplished
+                for buff_object in self.active_buffs:
+                    if buff_object.name == buff_name:
+                        trigger = True
+                # Create the new buff if there isn't a match
+                if trigger is False:
+                    print('[Debug - Info]:', buff_name, 'added.')
+                    self.active_buffs.append(Buff(buff_name))
+
+    def draw_buff_images(self):
+        """
+        A function to rotate through the image list and display the buff animations to the screen.
+
+        @return: none
+        @rtype: none
+        """
+        # Increment timer until it hits trigger for the specific buff object in the self.active_buffs list
+        for buff in self.active_buffs:
+            buff.image_timer += 1
+            # Display buff images
+            if buff.active is True and buff.buff_time_length != 0:
+                if buff.image_timer >= buff.timer_trigger:
+                    # Restart if at end of index after increment
+                    if buff.index == len(buff.images_buff) - 1:
+                        buff.index = 0
+                    else:
+                        buff.index += 1
+                    buff.image_timer = 0
+                    # Push appropriate image after cleansing
+                    buff.image = buff.images_buff[buff.index]
+                    if self.character.direction == 'Left':
+                        buff.image = pygame.transform.flip(buff.image, True, False)
+
+                # Update image location and display
+                buff.image_rect = buff.image.get_rect()
+                buff.image_rect.x = self.character.rect.x - 15
+                buff.image_rect.y = self.character.rect.y - 15
+                self.screen.blit(buff.image, buff.image_rect)
+
+                # Since it was displayed, decrement the buff length
+                buff.buff_time_length -= 1
+            # Change to debuff if need be
+            elif buff.active is True and buff.buff_time_length == 0:
+                buff.active = False
+            # Display debuff images
+            elif buff.active is False and buff.debuff_time_length != 0:
+                if buff.image_timer >= buff.timer_trigger:
+                    # Restart if at end of index after increment
+                    if buff.index == len(buff.images_debuff) - 1:
+                        buff.index = 0
+                    else:
+                        buff.index += 1
+                        buff.image_timer = 0
+                    # Push appropriate image after cleansing
+                    buff.image = buff.images_debuff[buff.index]
+                    if self.character.direction == 'Left':
+                        buff.image = pygame.transform.flip(buff.image, True, False)
+
+                # Update image location and display
+                buff.image_rect = buff.image.get_rect()
+                buff.image_rect.x = self.character.rect.x - 15
+                buff.image_rect.y = self.character.rect.y - 15
+                self.screen.blit(buff.image, buff.image_rect)
+
+                # Since it was displayed, decrement the debuff length
+                buff.debuff_time_length -= 1
+            else:
+                # Buff has finished it's effects on the character and is now going into passive mode
+                pass

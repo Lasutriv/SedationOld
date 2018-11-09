@@ -1,5 +1,9 @@
-# Loaded settings
-# NOTE: If any setting is added into this file then please double check that it is added into the settings_defaults.py file
+# Loaded settings defaults
+# Tanner Fry
+# tefnq2@mst.edu
+
+# NOTE: If any setting is added into this file then please double check that it is added into the settings_defaults.py
+# NOTE: file as well as the Bin/Backups/settings_defaults.py file
 # Colors base
 RED = (255, 0, 0)
 ORANGE = (255, 127, 0)
@@ -11,21 +15,30 @@ VIOLET = (148, 0, 211)
 # Colors alt
 BLACK = (0, 0, 0)
 CYAN = (0, 255, 255)
-DARK_GRAY = (105, 105, 105)
 DEEP_GRAY = (16, 16, 16)
+DARK_GRAY = (105, 105, 105)
+DARKER_GRAY = (174, 174, 174)
+GRAY = (180, 180, 180)
 LIGHT_GRAY = (211, 211, 211)
 PURPLE = (106, 49, 202)
 TAN = (210, 180, 140)
 WHITE = (255, 255, 255)
 
+TRANSPARENT = (255, 255, 255)
+
 # Colors for the UI
 UI_BANNER_BACKGROUND = PURPLE
 UI_BANNER_FOREGROUND = WHITE
+UI_FEEDBACK_TEXT = DARKER_GRAY
 
 # File/folder locations
 # TODO: Finish directory changes to streamline the ease of location changing later.
+# CONT: Change any directories with the name 'Test' in it and add from them any of the
+# CONT: sprites we will be using.
 DIR_SPRITES_CHAR_BASE = 'Bin/Sprites/Char_Base'
 DIR_SPRITES_GAME_ENVI = 'Bin/Sprites/Game_Environment'
+DIR_SPRITES_GAME_INV = 'Bin/Sprites/Game_Inventory_Items'
+DIR_SPRITES_NPC = 'Bin/Sprites/NPCs/Test'
 DIR_SPRITES_UI = 'Bin/Sprites/User_Interface'
 
 # Game
@@ -33,19 +46,19 @@ DIR_SPRITES_UI = 'Bin/Sprites/User_Interface'
 DIFFICULTY = 'Casual'
 FPS = 60
 GRAPHICS = 'High'
-TITLE_GAME = 'ProjectZ'
+TITLE_GAME = 'Sedation'
 TOTAL_LEVELS = 2
-TOTAL_LEVEL_ASSETS = 0  # Tells how many blocks a tile map level will be using. We could use this to optimize the code for loading bigger maps
+TOTAL_LEVEL_ASSETS = 0  # Tells how many blocks a tile map level will be using. Could use to optimize for bigger maps
 
 # Game obstacle endurance requirements
 REQ_CLIMBING_ENDURANCE = 2
-REQ_JUMP_ENDURANCE = 10
+REQ_JUMP_ENDURANCE = 5
 
 # Project
 CREATED = 'January 14th, 2018'
 RELEASED = 'TBD'
 CREATOR = 'Tanner Fry'
-VERSION = '0.0.5'
+VERSION = '0.0.7'
 
 # Window
 # Tiles - 40 squares by 30 squares
@@ -64,16 +77,22 @@ WINDOW_WIDTH = 1440
 
 # Character - At bottom due to extensive variable amount
 # TODO: Rename character settings that don't have 'CHAR_' in front of them. Remember to do the same for any file using settings.py
-ACCELERATION = 2
+ACCELERATION = 3
 ANIM_CLIMBING_SPEED = 5
+ANIM_INTERACT_EXIT_SPEED = 3
+ANIM_INTERACT_FEEDBACK_SPEED = 3
+ANIM_INTERACT_HELP_SPEED = 3
+ANIM_INTERACT_OPTIONS_SPEED = 3
 ANIM_JUMPING_SPEED = 0
 ANIM_FALLING_SPEED = 0
 ANIM_IDLE_SPEED = 8
-ANIM_RUNNING_SPEED = 3
-CAP_VELOCITY_WALKING = 7
-CAP_VELOCITY_RUNNING = 9
+ANIM_RUNNING_SPEED = 2
+ANIM_WALKING_SPEED = 3
+CAP_VELOCITY_WALKING = 9
+CAP_VELOCITY_RUNNING = 12
 CAP_VELOCITY_CLIMB = CAP_VELOCITY_WALKING / 1.2
 CHAR_NAME = 'Lasutriv'
+CHAR_INVENTORY = ['Bowl_Half', 'Bowl_Full']
 JUMP_STRENGTH = 15
 # Cosmic forces
 AIR_RESISTANCE = 1

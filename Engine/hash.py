@@ -1,6 +1,9 @@
+# Testing hashing sequences
+# Tanner Fry
+# tefnq2@mst.edu
 import random
-
 # Basic hash principle, a function that takes in input value, and from that input creates an output value deterministic of the input value.
+
 def hash_me(int):
     alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     hash_length = 128
