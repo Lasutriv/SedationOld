@@ -1,5 +1,5 @@
 # SedationOld
-Not every file will be added either due to design ideas, special art, and more.  
+Not every file will be added either due to design ideas, special art, or other.  
 
 Video of most recently posted developments: https://vimeo.com/298192814  
 # What's Included:
