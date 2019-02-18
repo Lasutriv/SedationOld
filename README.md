@@ -1,7 +1,7 @@
 # SedationOld
 Not every file will be added either due to design ideas, special art, or other.  
 
-Video of most recently posted developments:  
+Videos of most recently posted developments:  
 https://vimeo.com/298192814  
 https://vimeo.com/301103209  
 # What's Included:
