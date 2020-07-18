@@ -18,7 +18,7 @@ https://vimeo.com/301103209
 # What Sedation May Be
 A procedurally generated platformer that is merely open world with dynamic building, fighting, and acrobatics.
 # What Sedation Needs To Run
-Pygame 1.9.4 or higher  
+Pygame 1.9.6 or higher  
 Python 3.7 or higher
 # What Is The Ambition Of ProjectZ 
 To push Python as hard as possible in order to create a highly functioning game.
