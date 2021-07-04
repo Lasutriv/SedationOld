@@ -20,7 +20,7 @@ A procedurally generated platformer that is merely open world with dynamic build
 # What Sedation Needs To Run
 Pygame 1.9.6 or higher  
 Python 3.7 or higher
-# What Is The Ambition Of ProjectZ 
+# What Is The Ambition Of Sedation 
 To push Python as hard as possible in order to create a highly functioning game.
 # What Is The Current Stage
 Although the project has been worked on for countless hours, it is nowhere near completition. It does allow for multiple scenes within multiple levels if you have the full code. 
