@@ -32,4 +32,4 @@ Some simple takeaways:
 
 Reminder, this repository is only a fraction of the code.
 
-Email me at tefnq2@mst.edu if you'd like to check the main repository.
+Email me at tannerf1101@yahoo.com if you'd like to check the main repository.
